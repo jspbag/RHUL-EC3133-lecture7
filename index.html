@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="generator" content="pandoc">
+  <title>Regression with panel data</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+  <link rel="stylesheet" href="index_files/reveal.js-3.3.0.1/css/reveal.css"/>
+
+
+<style type="text/css">
+code.sourceCode > span { display: inline-block; line-height: 1.25; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode { white-space: pre; position: relative; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+code.sourceCode { white-space: pre-wrap; }
+code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+<link rel="stylesheet" href="index_files/reveal.js-3.3.0.1/css/theme/solarized.css" id="theme">
+
+
+  <!-- some tweaks to reveal css -->
+  <style type="text/css">
+    .reveal h1 { font-size: 2.0em; }
+    .reveal h2 { font-size: 1.5em;  }
+    .reveal h3 { font-size: 1.25em;	}
+    .reveal h4 { font-size: 1em;	}
+
+    .reveal .slides>section,
+    .reveal .slides>section>section {
+      padding: 0px 0px;
+    }
+
+
+
+    .reveal table {
+      border-width: 1px;
+      border-spacing: 2px;
+      border-style: dotted;
+      border-color: gray;
+      border-collapse: collapse;
+      font-size: 0.7em;
+    }
+
+    .reveal table th {
+      border-width: 1px;
+      padding-left: 10px;
+      padding-right: 25px;
+      font-weight: bold;
+      border-style: dotted;
+      border-color: gray;
+    }
+
+    .reveal table td {
+      border-width: 1px;
+      padding-left: 10px;
+      padding-right: 25px;
+      border-style: dotted;
+      border-color: gray;
+    }
+
+
+  </style>
+
+    <style type="text/css">code{white-space: pre;}</style>
+
+    <link rel="stylesheet" href="mystyle.css"/>
+
+<!-- Printing and PDF exports -->
+<script id="paper-css" type="application/dynamic-css">
+
+/* Default Print Stylesheet Template
+   by Rob Glazebrook of CSSnewbie.com
+   Last Updated: June 4, 2008
+
+   Feel free (nay, compelled) to edit, append, and
+   manipulate this file as you see fit. */
+
+
+@media print {
+
+	/* SECTION 1: Set default width, margin, float, and
+	   background. This prevents elements from extending
+	   beyond the edge of the printed page, and prevents
+	   unnecessary background images from printing */
+	html {
+		background: #fff;
+		width: auto;
+		height: auto;
+		overflow: visible;
+	}
+	body {
+		background: #fff;
+		font-size: 20pt;
+		width: auto;
+		height: auto;
+		border: 0;
+		margin: 0 5%;
+		padding: 0;
+		overflow: visible;
+		float: none !important;
+	}
+
+	/* SECTION 2: Remove any elements not needed in print.
+	   This would include navigation, ads, sidebars, etc. */
+	.nestedarrow,
+	.controls,
+	.fork-reveal,
+	.share-reveal,
+	.state-background,
+	.reveal .progress,
+	.reveal .backgrounds {
+		display: none !important;
+	}
+
+	/* SECTION 3: Set body font face, size, and color.
+	   Consider using a serif font for readability. */
+	body, p, td, li, div {
+		font-size: 20pt!important;
+		font-family: Georgia, "Times New Roman", Times, serif !important;
+		color: #000;
+	}
+
+	/* SECTION 4: Set heading font face, sizes, and color.
+	   Differentiate your headings from your body text.
+	   Perhaps use a large sans-serif for distinction. */
+	h1,h2,h3,h4,h5,h6 {
+		color: #000!important;
+		height: auto;
+		line-height: normal;
+		font-family: Georgia, "Times New Roman", Times, serif !important;
+		text-shadow: 0 0 0 #000 !important;
+		text-align: left;
+		letter-spacing: normal;
+	}
+	/* Need to reduce the size of the fonts for printing */
+	h1 { font-size: 28pt !important;  }
+	h2 { font-size: 24pt !important; }
+	h3 { font-size: 22pt !important; }
+	h4 { font-size: 22pt !important; font-variant: small-caps; }
+	h5 { font-size: 21pt !important; }
+	h6 { font-size: 20pt !important; font-style: italic; }
+
+	/* SECTION 5: Make hyperlinks more usable.
+	   Ensure links are underlined, and consider appending
+	   the URL to the end of the link for usability. */
+	a:link,
+	a:visited {
+		color: #000 !important;
+		font-weight: bold;
+		text-decoration: underline;
+	}
+	/*
+	.reveal a:link:after,
+	.reveal a:visited:after {
+		content: " (" attr(href) ") ";
+		color: #222 !important;
+		font-size: 90%;
+	}
+	*/
+
+
+	/* SECTION 6: more reveal.js specific additions by @skypanther */
+	ul, ol, div, p {
+		visibility: visible;
+		position: static;
+		width: auto;
+		height: auto;
+		display: block;
+		overflow: visible;
+		margin: 0;
+		text-align: left !important;
+	}
+	.reveal pre,
+	.reveal table {
+		margin-left: 0;
+		margin-right: 0;
+	}
+	.reveal pre code {
+		padding: 20px;
+		border: 1px solid #ddd;
+	}
+	.reveal blockquote {
+		margin: 20px 0;
+	}
+	.reveal .slides {
+		position: static !important;
+		width: auto !important;
+		height: auto !important;
+
+		left: 0 !important;
+		top: 0 !important;
+		margin-left: 0 !important;
+		margin-top: 0 !important;
+		padding: 0 !important;
+		zoom: 1 !important;
+
+		overflow: visible !important;
+		display: block !important;
+
+		text-align: left !important;
+		-webkit-perspective: none;
+		   -moz-perspective: none;
+		    -ms-perspective: none;
+		        perspective: none;
+
+		-webkit-perspective-origin: 50% 50%;
+		   -moz-perspective-origin: 50% 50%;
+		    -ms-perspective-origin: 50% 50%;
+		        perspective-origin: 50% 50%;
+	}
+	.reveal .slides section {
+		visibility: visible !important;
+		position: static !important;
+		width: auto !important;
+		height: auto !important;
+		display: block !important;
+		overflow: visible !important;
+
+		left: 0 !important;
+		top: 0 !important;
+		margin-left: 0 !important;
+		margin-top: 0 !important;
+		padding: 60px 20px !important;
+		z-index: auto !important;
+
+		opacity: 1 !important;
+
+		page-break-after: always !important;
+
+		-webkit-transform-style: flat !important;
+		   -moz-transform-style: flat !important;
+		    -ms-transform-style: flat !important;
+		        transform-style: flat !important;
+
+		-webkit-transform: none !important;
+		   -moz-transform: none !important;
+		    -ms-transform: none !important;
+		        transform: none !important;
+
+		-webkit-transition: none !important;
+		   -moz-transition: none !important;
+		    -ms-transition: none !important;
+		        transition: none !important;
+	}
+	.reveal .slides section.stack {
+		padding: 0 !important;
+	}
+	.reveal section:last-of-type {
+		page-break-after: avoid !important;
+	}
+	.reveal section .fragment {
+		opacity: 1 !important;
+		visibility: visible !important;
+
+		-webkit-transform: none !important;
+		   -moz-transform: none !important;
+		    -ms-transform: none !important;
+		        transform: none !important;
+	}
+	.reveal section img {
+		display: block;
+		margin: 15px 0px;
+		background: rgba(255,255,255,1);
+		border: 1px solid #666;
+		box-shadow: none;
+	}
+
+	.reveal section small {
+		font-size: 0.8em;
+	}
+
+}  
+</script>
+
+
+<script id="pdf-css" type="application/dynamic-css">
+    
+/**
+ * This stylesheet is used to print reveal.js
+ * presentations to PDF.
+ *
+ * https://github.com/hakimel/reveal.js#pdf-export
+ */
+
+* {
+	-webkit-print-color-adjust: exact;
+}
+
+body {
+	margin: 0 auto !important;
+	border: 0;
+	padding: 0;
+	float: none !important;
+	overflow: visible;
+}
+
+html {
+	width: 100%;
+	height: 100%;
+	overflow: visible;
+}
+
+/* Remove any elements not needed in print. */
+.nestedarrow,
+.reveal .controls,
+.reveal .progress,
+.reveal .playback,
+.reveal.overview,
+.fork-reveal,
+.share-reveal,
+.state-background {
+	display: none !important;
+}
+
+h1, h2, h3, h4, h5, h6 {
+	text-shadow: 0 0 0 #000 !important;
+}
+
+.reveal pre code {
+	overflow: hidden !important;
+	font-family: Courier, 'Courier New', monospace !important;
+}
+
+ul, ol, div, p {
+	visibility: visible;
+	position: static;
+	width: auto;
+	height: auto;
+	display: block;
+	overflow: visible;
+	margin: auto;
+}
+.reveal {
+	width: auto !important;
+	height: auto !important;
+	overflow: hidden !important;
+}
+.reveal .slides {
+	position: static;
+	width: 100%;
+	height: auto;
+
+	left: auto;
+	top: auto;
+	margin: 0 !important;
+	padding: 0 !important;
+
+	overflow: visible;
+	display: block;
+
+	-webkit-perspective: none;
+	   -moz-perspective: none;
+	    -ms-perspective: none;
+	        perspective: none;
+
+	-webkit-perspective-origin: 50% 50%; /* there isn't a none/auto value but 50-50 is the default */
+	   -moz-perspective-origin: 50% 50%;
+	    -ms-perspective-origin: 50% 50%;
+	        perspective-origin: 50% 50%;
+}
+
+.reveal .slides section {
+	page-break-after: always !important;
+
+	visibility: visible !important;
+	position: relative !important;
+	display: block !important;
+	position: relative !important;
+
+	margin: 0 !important;
+	padding: 0 !important;
+	box-sizing: border-box !important;
+	min-height: 1px;
+
+	opacity: 1 !important;
+
+	-webkit-transform-style: flat !important;
+	   -moz-transform-style: flat !important;
+	    -ms-transform-style: flat !important;
+	        transform-style: flat !important;
+
+	-webkit-transform: none !important;
+	   -moz-transform: none !important;
+	    -ms-transform: none !important;
+	        transform: none !important;
+}
+
+.reveal section.stack {
+	margin: 0 !important;
+	padding: 0 !important;
+	page-break-after: avoid !important;
+	height: auto !important;
+	min-height: auto !important;
+}
+
+.reveal img {
+	box-shadow: none;
+}
+
+.reveal .roll {
+	overflow: visible;
+	line-height: 1em;
+}
+
+/* Slide backgrounds are placed inside of their slide when exporting to PDF */
+.reveal section .slide-background {
+	display: block !important;
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	z-index: -1;
+}
+
+/* All elements should be above the slide-background */
+.reveal section>* {
+	position: relative;
+	z-index: 1;
+}
+
+/* Display slide speaker notes when 'showNotes' is enabled */
+.reveal .speaker-notes-pdf {
+	display: block;
+	width: 100%;
+	max-height: none;
+	left: auto;
+	top: auto;
+	z-index: 100;
+}
+
+/* Display slide numbers when 'slideNumber' is enabled */
+.reveal .slide-number-pdf {
+	display: block;
+	position: absolute;
+	font-size: 14px;
+}
+
+</script>
+
+
+<script>
+var style = document.createElement( 'style' );
+style.type = 'text/css';
+var style_script_id = window.location.search.match( /print-pdf/gi ) ? 'pdf-css' : 'paper-css';
+var style_script = document.getElementById(style_script_id).text;
+style.innerHTML = style_script;
+document.getElementsByTagName('head')[0].appendChild(style);
+</script>
+
+    <link href="index_files/font-awesome-5.1.0/css/all.css" rel="stylesheet" />
+    <link href="index_files/font-awesome-5.1.0/css/v4-shims.css" rel="stylesheet" />
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+
+
+<section class="slide level2">
+
+<section>
+<h1>
+Regression with panel data
+</h1>
+<p>Based on Stock and Watson, ch. 10</p>
+<p><br></p>
+<h2>
+<a href="mailto:jesper.bagger@rhul.ac.uk">Jesper Bagger</a>
+</h2>
+<h3>
+EC3133 | Royal Holloway | 2020/21
+</h3>
+</section>
+</section>
+<section id="outline" class="slide level2">
+<h2>Outline</h2>
+<ol type="1">
+<li><p>Panel data</p></li>
+<li><p>Panel data and omitted variable bias</p></li>
+<li><p>The fixed effects regression</p></li>
+<li><p>Regression with entity and time fixed effects</p></li>
+<li><p>Estimating causal effects in the fixed effects model</p></li>
+<li><p>Clustered standard errors</p></li>
+</ol>
+</section>
+<section><section id="panel-data" class="title-slide slide level1"><h1>Panel data</h1></section><section id="panel-data-1" class="slide level2">
+<h2>Panel data</h2>
+<ul>
+<li><p>A <strong>panel data set</strong> contains <strong>repeated</strong> observations on the <strong>same</strong> cross section entity</p></li>
+<li><p>Individual observations on the variables in a panel data set are indexed by two subscripts:</p>
+<ul>
+<li><p>Subscript <span class="math inline">\(i\)</span> index the cross section entity: <span class="math inline">\(i=1,\ldots,n\)</span></p></li>
+<li><p>Subscript <span class="math inline">\(t\)</span> index the time period: <span class="math inline">\(t=1,\ldots,T\)</span></p></li>
+</ul></li>
+<li><p>A panel is <strong>balanced</strong> if every entity is observed for the same number of periods</p></li>
+</ul>
+</section><section id="the-state-traffic-fatality-panel" class="slide level2">
+<h2>The state traffic fatality panel</h2>
+<ul>
+<li><p>Cross section entities: the 48 contiguous US states</p></li>
+<li><p>Time periods: annual, from 1982 to 1988</p></li>
+<li><p>Traffic fatality rate: number of traffic deaths per 10,000 people living in the state</p></li>
+<li><p>Beer tax: tax on a case of beer in $1988</p></li>
+</ul>
+</section></section>
+<section><section id="panel-data-and-omitted-variable-bias" class="title-slide slide level1"><h1>Panel data and omitted variable bias</h1></section><section id="fatality-rate-beer-tax-scatters" class="slide level2">
+<h2>Fatality rate-beer tax scatters</h2>
+<p><img data-src="index_files/figure-revealjs/unnamed-chunk-2-1.png" /><!-- --></p>
+</section><section id="omitted-variable-bias" class="slide level2">
+<h2>Omitted variable bias</h2>
+<ul>
+<li><p>Suppose <span class="math inline">\(Z_i\)</span> is a time-invariant omitted variable</p>
+<p><span class="math display">\[FR_{it} = \beta_0 + \beta_1 BT_{it} + \beta_2 Z_i + u_{it}\]</span></p>
+<p>What might <span class="math inline">\(Z_i\)</span> capture? Is it likely correlated with <span class="math inline">\(BT_{it}\)</span>?</p></li>
+<li><p>Change in the fatality rate between 1982 and 1988 is naturally free of problematic variable <span class="math inline">\(Z_i\)</span>,</p>
+<p><span class="math display">\[\begin{multline*}
+(FR_{i,1988} - FR_{i,1982}) = \\
+\beta_1 (BT_{i,88} - BT_{i,82}) + (u_{i,88} - u_{i,82});
+\end{multline*}\]</span></p>
+<p>yet, can estimate coefficient of interest <span class="math inline">\(\beta_1\)</span> by regressing <span class="math inline">\((FR_{i,88} - FR_{i,82})\)</span> on <span class="math inline">\((BT_{i,88} - BT_{i,82})\)</span></p></li>
+</ul>
+</section><section id="changes-in-fatality-rate-changes-in-beer-tax-scatter" class="slide level2">
+<h2>Changes in fatality rate-changes in beer tax scatter</h2>
+<p><img data-src="index_files/figure-revealjs/unnamed-chunk-3-1.png" /><!-- --></p>
+</section></section>
+<section><section id="the-fixed-effects-regression" class="title-slide slide level1"><h1>The fixed effects regression</h1></section><section id="the-fixed-effects-regression-model" class="slide level2">
+<h2>The fixed effects regression model</h2>
+<ul>
+<li><p>Population regression model</p>
+<p><span class="math display">\[FR_{it} = \underset{\beta_0 + \beta_2 Z_i}{\underbrace{\alpha_i}} + \beta_1 BT_{it} + u_{it}\]</span></p></li>
+<li><p><span class="math inline">\(\alpha_i\)</span> is an <strong>entity fixed effect</strong> containing <strong>all</strong> time-invariant determinants of <span class="math inline">\(FR_{it}\)</span></p></li>
+<li><p>The time-invariant determinants may be correlated with timevarying regressor <span class="math inline">\(BT_{it}\)</span></p></li>
+<li><p>The fixed effects regression model has a separate intercepts for each cross section unit (<span class="math inline">\(n\)</span> intercepts!)</p></li>
+</ul>
+</section><section id="entity-demeaning" class="slide level2">
+<h2>Entity-demeaning</h2>
+<ul>
+<li><p>The <strong>entity-means</strong> of <span class="math inline">\(FR_{it}\)</span>, <span class="math inline">\(BT_{it}\)</span>, and <span class="math inline">\(u_{it}\)</span> are</p>
+<p><span class="math display">\[\overline{FR}_{i} = \frac{1}{T} \sum_{t=1}^T FR_{it}; \quad \overline{BT}_{i} = \frac{1}{T} \sum_{t=1}^T BT_{it};\]</span> <span class="math display">\[\overline{u}_{i} = \frac{1}{T} \sum_{t=1}^T u_{it}\]</span></p></li>
+<li><p>Entity-demeaning the model gets rid of problematic <span class="math inline">\(\alpha_i\)</span></p>
+<p><span class="math display">\[(FR_{it} - \overline{FR}_{i})= \beta_1 (BT_{it} - \overline{BT}_{i}) + (u_{it} - \overline{u}_{i})\]</span></p></li>
+<li><p>The within-estimator <span class="math inline">\(\hat{\beta}_{1,\text{Within}}\)</span>: estimate <span class="math inline">\(\beta_1\)</span> by OLS in the demeaned regression of <span class="math inline">\((FR_{it} - \overline{FR}_{i})\)</span> on <span class="math inline">\((BT_{it} - \overline{BT}_{i})\)</span></p></li>
+</ul>
+</section><section id="demeaned-fatality-rate-demeaned-beer-tax-scatter" class="slide level2">
+<h2>Demeaned fatality rate-demeaned beer tax scatter</h2>
+<p><img data-src="index_files/figure-revealjs/unnamed-chunk-4-1.png" /><!-- --></p>
+</section><section id="the-within-estimator-in-r-using-plm" class="slide level2">
+<h2>The within-estimator in R using <code>plm()</code></h2>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">library</span>(plm) <span class="co"># Include plm library for estimating panel data regressions</span></span>
+<span id="cb1-2"><a href="#cb1-2"></a><span class="co"># Regression with state fixed effects (within-estimator)</span></span>
+<span id="cb1-3"><a href="#cb1-3"></a>plm1 &lt;-<span class="st"> </span><span class="kw">plm</span>(fatalrate <span class="op">~</span><span class="st">  </span>beertax, <span class="dt">data =</span> Fatalities, <span class="dt">index =</span> <span class="kw">c</span>(<span class="st">&quot;state&quot;</span>), <span class="dt">model =</span> <span class="st">&quot;within&quot;</span>)</span>
+<span id="cb1-4"><a href="#cb1-4"></a><span class="co"># Summarize regression output</span></span>
+<span id="cb1-5"><a href="#cb1-5"></a><span class="kw">summary</span>(plm1) </span></code></pre></div>
+</section><section id="the-within-estimator-in-r-using-plm-1" class="slide level2">
+<h2>The within-estimator in R using <code>plm()</code></h2>
+<pre><code>## Oneway (individual) effect Within Model
+## 
+## Call:
+## plm(formula = fatalrate ~ beertax, data = Fatalities, model = &quot;within&quot;, 
+##     index = c(&quot;state&quot;))
+## 
+## Balanced Panel: n = 48, T = 7, N = 336
+## 
+## Residuals:
+##       Min.    1st Qu.     Median    3rd Qu.       Max. 
+## -0.5869619 -0.0828376 -0.0012701  0.0795454  0.8977960 
+## 
+## Coefficients:
+##         Estimate Std. Error t-value Pr(&gt;|t|)    
+## beertax -0.65587    0.18785 -3.4915 0.000556 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Total Sum of Squares:    10.785
+## Residual Sum of Squares: 10.345
+## R-Squared:      0.040745
+## Adj. R-Squared: -0.11969
+## F-statistic: 12.1904 on 1 and 287 DF, p-value: 0.00055597</code></pre>
+</section><section id="the-within-estimator-using-dummy-variables" class="slide level2">
+<h2>The within-estimator using dummy variables</h2>
+<ul>
+<li><p>Consider the <span class="math inline">\(n\)</span> dummy variables indicating individual entities</p>
+<p><span class="math display">\[D1_i = \left\{ 
+\begin{array}{ll}
+1 &amp; \text{if } i = 1 \\
+0 &amp; \text{if } i \neq 1
+\end{array}
+\right.,
+\ldots, 
+Dn_i = \left\{ 
+\begin{array}{ll}
+1 &amp; \text{if } i = n \\
+0 &amp; \text{if } i \neq n
+\end{array}
+\right.
+\]</span></p></li>
+<li><p>Express the entity fixed effects as coefficients on <span class="math inline">\(n-1\)</span> dummy variables <span class="math inline">\(D2_i,\ldots,Dn_i\)</span></p>
+<p><span class="math display">\[FR_{it} = \alpha_1 + \alpha_2 D2_i + \ldots + \alpha_n Dn_i + \beta_1 BT_{it} + u_{it}\]</span></p>
+<p>and estimate the dummy variable model directly by OLS</p></li>
+</ul>
+</section><section id="the-within-estimator-in-r-using-dummy-variables" class="slide level2">
+<h2>The within-estimator in R using dummy variables</h2>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1"></a><span class="co"># Regression with state fixed effects (within-estimator)</span></span>
+<span id="cb3-2"><a href="#cb3-2"></a>lm.dummy &lt;-<span class="st"> </span><span class="kw">lm</span>(fatalrate <span class="op">~</span><span class="st">  </span>beertax <span class="op">+</span><span class="st"> </span>state <span class="op">-</span><span class="st"> </span><span class="dv">1</span>, <span class="dt">data =</span> Fatalities)</span>
+<span id="cb3-3"><a href="#cb3-3"></a><span class="co"># Summarize regression output</span></span>
+<span id="cb3-4"><a href="#cb3-4"></a><span class="kw">summary</span>(lm.dummy) </span></code></pre></div>
+</section><section id="the-within-estimator-in-r-using-dummy-variables-1" class="slide level2">
+<h2>The within-estimator in R using dummy variables</h2>
+<pre><code>## 
+## Call:
+## lm(formula = fatalrate ~ beertax + state - 1, data = Fatalities)
+## 
+## Residuals:
+##      Min       1Q   Median       3Q      Max 
+## -0.58696 -0.08284 -0.00127  0.07955  0.89780 
+## 
+## Coefficients:
+##         Estimate Std. Error t value Pr(&gt;|t|)    
+## beertax -0.65587    0.18785  -3.491 0.000556 ***
+## stateal  3.47763    0.31336  11.098  &lt; 2e-16 ***
+## stateaz  2.90990    0.09254  31.445  &lt; 2e-16 ***
+## statear  2.82268    0.13213  21.364  &lt; 2e-16 ***
+## stateca  1.96816    0.07401  26.594  &lt; 2e-16 ***
+## stateco  1.99335    0.08037  24.802  &lt; 2e-16 ***
+## statect  1.61537    0.08391  19.251  &lt; 2e-16 ***
+## statede  2.17003    0.07746  28.016  &lt; 2e-16 ***
+## statefl  3.20950    0.22151  14.489  &lt; 2e-16 ***
+## statega  4.00223    0.46403   8.625 4.43e-16 ***
+## stateid  2.80861    0.09877  28.437  &lt; 2e-16 ***
+## stateil  1.51601    0.07848  19.318  &lt; 2e-16 ***
+## statein  2.01609    0.08867  22.736  &lt; 2e-16 ***
+## stateia  1.93370    0.10222  18.918  &lt; 2e-16 ***
+## stateks  2.25441    0.10863  20.753  &lt; 2e-16 ***
+## stateky  2.26011    0.08046  28.089  &lt; 2e-16 ***
+## statela  2.63051    0.16266  16.171  &lt; 2e-16 ***
+## stateme  2.36968    0.16006  14.805  &lt; 2e-16 ***
+## statemd  1.77119    0.08246  21.480  &lt; 2e-16 ***
+## statema  1.36788    0.08648  15.818  &lt; 2e-16 ***
+## statemi  1.99310    0.11663  17.089  &lt; 2e-16 ***
+## statemn  1.58042    0.09363  16.880  &lt; 2e-16 ***
+## statems  3.44855    0.20936  16.472  &lt; 2e-16 ***
+## statemo  2.18137    0.09252  23.576  &lt; 2e-16 ***
+## statemt  3.11724    0.09441  33.017  &lt; 2e-16 ***
+## statene  1.95545    0.10551  18.534  &lt; 2e-16 ***
+## statenv  2.87686    0.08106  35.492  &lt; 2e-16 ***
+## statenh  2.22318    0.14114  15.751  &lt; 2e-16 ***
+## statenj  1.37188    0.07333  18.709  &lt; 2e-16 ***
+## statenm  3.90401    0.10154  38.449  &lt; 2e-16 ***
+## stateny  1.29096    0.07563  17.070  &lt; 2e-16 ***
+## statenc  3.18717    0.25173  12.661  &lt; 2e-16 ***
+## statend  1.85419    0.10193  18.191  &lt; 2e-16 ***
+## stateoh  1.80321    0.10193  17.691  &lt; 2e-16 ***
+## stateok  2.93257    0.18428  15.913  &lt; 2e-16 ***
+## stateor  2.30963    0.08117  28.453  &lt; 2e-16 ***
+## statepa  1.71016    0.08648  19.776  &lt; 2e-16 ***
+## stateri  1.21258    0.07753  15.640  &lt; 2e-16 ***
+## statesc  4.03480    0.35479  11.372  &lt; 2e-16 ***
+## statesd  2.47391    0.14121  17.519  &lt; 2e-16 ***
+## statetn  2.60197    0.09162  28.398  &lt; 2e-16 ***
+## statetx  2.56016    0.10853  23.589  &lt; 2e-16 ***
+## stateut  2.31368    0.15453  14.972  &lt; 2e-16 ***
+## statevt  2.51159    0.13973  17.975  &lt; 2e-16 ***
+## stateva  2.18745    0.14664  14.917  &lt; 2e-16 ***
+## statewa  1.81811    0.08233  22.084  &lt; 2e-16 ***
+## statewv  2.58088    0.10767  23.971  &lt; 2e-16 ***
+## statewi  1.71836    0.07746  22.185  &lt; 2e-16 ***
+## statewy  3.24913    0.07233  44.922  &lt; 2e-16 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 0.1899 on 287 degrees of freedom
+## Multiple R-squared:  0.9931, Adjusted R-squared:  0.992 
+## F-statistic: 847.8 on 49 and 287 DF,  p-value: &lt; 2.2e-16</code></pre>
+</section></section>
+<section><section id="regression-with-entity-and-time-fixed-effects" class="title-slide slide level1"><h1>Regression with entity and time fixed effects</h1></section><section id="regression-with-entity-and-time-fixed-effects-1" class="slide level2">
+<h2>Regression with entity and time fixed effects</h2>
+<ul>
+<li><p>Population regression model</p>
+<p><span class="math display">\[FR_{it} = \beta_0 + \beta_1 BT_{it} + \beta_2 Z_i  + \beta_3 S_t + u_{it}\]</span></p></li>
+<li><p>The model can be represented by an <strong>state and time fixed effects regression model</strong>:</p>
+<p><span class="math display">\[FR_{it} = \beta_1 BT_{it} + \alpha_i  + \lambda_t + u_{it}\]</span></p>
+<p>where <span class="math inline">\(\alpha_i\)</span> is an <strong>state fixed effect</strong>, <span class="math inline">\(\lambda_t\)</span> is a <strong>time fixed effect</strong>.</p></li>
+<li><p>The entity and time fixed effects regression model eliminates omitted variables arising both from</p>
+<ul>
+<li><p>time-invariant unobserved variables</p></li>
+<li><p>state-invariant unobserved variables</p></li>
+</ul></li>
+</ul>
+</section><section id="entity--and-time-demeaning" class="slide level2">
+<h2>Entity- and time-demeaning</h2>
+<ul>
+<li><p>The time-means of <span class="math inline">\(FR_{it}\)</span>, <span class="math inline">\(BT_{it}\)</span>, and <span class="math inline">\(u_{it}\)</span> are</p>
+<p><span class="math display">\[\overline{FR}_{t} = \frac{1}{n} \sum_{i=1}^n FR_{it}; \quad \overline{BT}_{t} = \frac{1}{n} \sum_{i=1}^n BT_{it};\]</span> <span class="math display">\[\overline{u}_{t} = \frac{1}{n} \sum_{i=1}^n u_{it}\]</span></p></li>
+<li><p>Entity- and time-demeaning the model gets rid of problematic entity- and time-fixed effects, <span class="math inline">\(\alpha_i\)</span> and <span class="math inline">\(\lambda_t\)</span></p>
+<p><span class="math display">\[\begin{multline*}
+(FR_{it} - \overline{FR}_{i} - \overline{FR}_{t}) = - (\overline{\alpha} + \overline{\lambda}) \\
+\beta_1 (BT_{it} - \overline{BT}_{i} - \overline{BT}_{t})   + (u_{it} - \overline{u}_{i} - \overline{u}_{t})
+\end{multline*}\]</span></p></li>
+</ul>
+</section><section id="demeaned-fatality-rate-demeaned-beer-tax-scatter-1" class="slide level2">
+<h2>Demeaned fatality rate-demeaned beer tax scatter</h2>
+<p><img data-src="index_files/figure-revealjs/unnamed-chunk-9-1.png" /><!-- --></p>
+</section><section id="the-twoway-within-estimator-in-r-using-plm" class="slide level2">
+<h2>The twoway within-estimator in R using <code>plm()</code></h2>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1"></a><span class="co"># Regression with state and year fixed effects (within-estimator)</span></span>
+<span id="cb5-2"><a href="#cb5-2"></a>plm2 &lt;-<span class="st"> </span><span class="kw">plm</span>(fatalrate <span class="op">~</span><span class="st">  </span>beertax, <span class="dt">data =</span> Fatalities, <span class="dt">index =</span> <span class="kw">c</span>(<span class="st">&quot;state&quot;</span>, <span class="st">&quot;year&quot;</span>), <span class="dt">model =</span> <span class="st">&quot;within&quot;</span>, <span class="dt">effect =</span> <span class="st">&quot;twoways&quot;</span>)</span>
+<span id="cb5-3"><a href="#cb5-3"></a><span class="co"># Summarize regression output</span></span>
+<span id="cb5-4"><a href="#cb5-4"></a><span class="kw">summary</span>(plm2) </span></code></pre></div>
+</section><section id="the-twoway-within-estimator-in-r-using-plm-1" class="slide level2">
+<h2>The twoway within-estimator in R using <code>plm()</code></h2>
+<pre><code>## Twoways effects Within Model
+## 
+## Call:
+## plm(formula = fatalrate ~ beertax, data = Fatalities, effect = &quot;twoways&quot;, 
+##     model = &quot;within&quot;, index = c(&quot;state&quot;, &quot;year&quot;))
+## 
+## Balanced Panel: n = 48, T = 7, N = 336
+## 
+## Residuals:
+##       Min.    1st Qu.     Median    3rd Qu.       Max. 
+## -0.5955623 -0.0809619  0.0014301  0.0823356  0.8388350 
+## 
+## Coefficients:
+##         Estimate Std. Error t-value Pr(&gt;|t|)   
+## beertax -0.63998    0.19738 -3.2424 0.001328 **
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Total Sum of Squares:    10.29
+## Residual Sum of Squares: 9.9193
+## R-Squared:      0.036065
+## Adj. R-Squared: -0.14918
+## F-statistic: 10.5133 on 1 and 281 DF, p-value: 0.001328</code></pre>
+</section><section id="the-twoway-within-estimator-in-r-using-dummy-variables" class="slide level2">
+<h2>The twoway within-estimator in R using dummy variables</h2>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1"></a><span class="co"># Regression with state fixed effects (within-estimator)</span></span>
+<span id="cb7-2"><a href="#cb7-2"></a>lm.dummy.twoway &lt;-<span class="st"> </span><span class="kw">lm</span>(fatalrate <span class="op">~</span><span class="st">  </span>beertax <span class="op">+</span><span class="st"> </span>state <span class="op">-</span><span class="st"> </span><span class="dv">1</span> <span class="op">+</span><span class="st"> </span>year <span class="op">-</span><span class="st"> </span><span class="dv">1</span>, <span class="dt">data =</span> Fatalities)</span>
+<span id="cb7-3"><a href="#cb7-3"></a><span class="co"># Summarize regression output</span></span>
+<span id="cb7-4"><a href="#cb7-4"></a><span class="kw">summary</span>(lm.dummy.twoway) </span></code></pre></div>
+</section></section>
+<section><section id="estimating-causal-effects-in-the-fixed-effects-model" class="title-slide slide level1"><h1>Estimating causal effects in the fixed effects model</h1></section><section id="the-fixed-effects-regression-assumptions" class="slide level2">
+<h2>The fixed effects regression assumptions</h2>
+<div class="box">
+<p><span class="math display">\[FR_{it} = \alpha_i + \beta_1 BT_{it} + u_{it}; \quad i=1,\ldots,n; \, t = 1,\ldots,T\]</span></p>
+<p>where <span class="math inline">\(\beta_1\)</span> is the <strong>causal effect</strong> of <span class="math inline">\(BT_{it}\)</span> on <span class="math inline">\(FT_{it}\)</span>. <span class="math inline">\(\hat{\beta}_{1,\text{Within}}\)</span> is consistent for <span class="math inline">\(\beta_1\)</span> and asymptotically normal if</p>
+<ol type="1">
+<li><p><span class="math inline">\(\mathrm{E}(u_{it}|BT_{i1},\ldots,BT_{iT},\alpha_i) = 0\)</span></p></li>
+<li><p><span class="math inline">\((BT_{i1},\ldots,BT_{iT},u_{i1},\ldots,u_{iT};i=1,\ldots,n)\)</span> are i.i.d. draws from their joint distribution</p></li>
+<li><p><span class="math inline">\((BT_{it},u_{it})\)</span> have nonzero finite 4th moments</p></li>
+<li><p>There is no perfect multicollinearity</p></li>
+</ol>
+</div>
+</section></section>
+<section><section id="clustered-standard-errors" class="title-slide slide level1"><h1>Clustered standard errors</h1></section><section id="the-sampling-distribution-of-the-within-estimator" class="slide level2">
+<h2>The sampling distribution of the within-estimator</h2>
+<ul>
+<li><p>When <span class="math inline">\(n\)</span> is large, <span class="math inline">\(\hat{\beta}_{1,\text{Within}}\)</span> is well approximated by a random variable with a normal distribution</p>
+<p><span class="math display">\[\hat{\beta}_{1,\text{Within}} \overset{\text{approx.}}{\sim} \mathcal{N}\left( \beta_1, \mathrm{var}(\hat{\beta}_{1,\text{Within}}) \right)\]</span></p>
+<p>where <span class="math display">\[\mathrm{var}(\hat{\beta}_{1,\text{Within}}) = \frac{1}{nT}\frac{\frac{1}{T}\mathrm{var}\left( \sum_{t=1}^T \widetilde{X}_{it} \widetilde{u}_{it}\right)}{\mathrm{E}\left(\frac{1}{T}\sum_{t=1}^T \widetilde{X}_{it}^2\right)^2}\]</span></p></li>
+<li><p>Looks like the variance in a heteroskedastic regression model, but also allows for <strong>serial correlation</strong> in the errors <span class="math inline">\(u_{it}\)</span> within each state <span class="math inline">\(i\)</span>.</p></li>
+</ul>
+</section><section id="clustered-standard-errors-har" class="slide level2">
+<h2>Clustered standard errors (HAR)</h2>
+<ul>
+<li><p><span class="math inline">\(\mathrm{var}(\hat{\beta}_{1,\text{Within}})\)</span> contains unknown population quantities, which are replaced by sample counterparts:</p>
+<p><span class="math display">\[SE(\hat{\beta}_{1,\text{Within}}))  = \sqrt{\frac{1}{nT}\frac{\frac{1}{n-1}\sum_{i=1}^n \frac{1}{T}\left[\sum_{t=1}^T \widetilde{BT}_{it} \hat{u}_{it}\right]^2}{\left[ \frac{1}{nT} \sum_{i=1}^n \sum_{t=1}^T \widetilde{BT}_{it}^2 \right]^2}}\]</span></p>
+<p>where <span class="math inline">\(\hat{u}_{it}\)</span> is the residual from the fixed effects regression.</p></li>
+<li><p>This is the <strong>clustered standard errors</strong> of <span class="math inline">\(\hat{\beta}_{1,\text{Within}}\)</span>, and <span class="math inline">\(SE(\hat{\beta}_{1,\text{Within}})) \overset{p}{\rightarrow} SD(\hat{\beta}_{1,\text{Within}})\)</span> as <span class="math inline">\(n \rightarrow \infty\)</span>, even when <span class="math inline">\(u_{it}\)</span> is heteroskedastic and serially correlated.</p></li>
+</ul>
+</section><section id="clustered-standard-errors-in-r" class="slide level2">
+<h2>Clustered standard errors in R</h2>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1"></a><span class="co"># Compute robust (clustered at group level) standard errors and print output to console</span></span>
+<span id="cb8-2"><a href="#cb8-2"></a><span class="kw">parameters</span>(plm2,<span class="dt">robust=</span><span class="ot">TRUE</span>,<span class="dt">vcov_type=</span><span class="st">&quot;HC1&quot;</span>, <span class="dt">digits =</span> <span class="dv">3</span>, <span class="dt">ci_digits =</span> <span class="dv">3</span>, <span class="dt">p_digits =</span> <span class="dv">3</span>)</span></code></pre></div>
+</section><section id="the-within-estimator-in-r-using-plm-2" class="slide level2">
+<h2>The within-estimator in R using <code>plm()</code></h2>
+<pre><code>## Parameter | Coefficient |    SE |          95% CI |      t |  df |     p
+## ------------------------------------------------------------------------
+## beertax   |      -0.640 | 0.350 | [-1.329, 0.049] | -1.828 | 281 | 0.069</code></pre>
+</section></section>
+<section id="summary" class="title-slide slide level1"><h1>Summary</h1><ul>
+<li><p>A panel data set contains repeated observations on the same cross section entity</p></li>
+<li><p>The fixed effects regression model has a separate intercepts for each cross section unit (<span class="math inline">\(n\)</span> intercepts!)</p></li>
+<li><p>The within-estimator of the slopes on the time-varying variables uses only within-entity information: as-if controlling for <em>all</em> time-invariant omitted variables</p></li>
+<li><p>The within-estimator consistently estimates causal effects if errors are uncorrelated with past, present, and future values of the time-varying regressors</p></li>
+<li><p>Always use clustered standard errors</p></li>
+</ul></section>
+    </div>
+  </div>
+
+  <script src="index_files/reveal.js-3.3.0.1/lib/js/head.min.js"></script>
+  <script src="index_files/reveal.js-3.3.0.1/js/reveal.js"></script>
+
+  <script>
+
+      // Full list of configuration options available at:
+      // https://github.com/hakimel/reveal.js#configuration
+      Reveal.initialize({
+        // Display the page number of the current slide
+        slideNumber: true,
+        // Push each slide change to the browser history
+        history: true,
+        // Vertical centering of slides
+        center: true,
+        // Opens links in an iframe preview overlay
+        previewLinks: false,
+        // Transition style
+        transition: 'none', // none/fade/slide/convex/concave/zoom
+        // Transition style for full page slide backgrounds
+        backgroundTransition: 'none', // none/fade/slide/convex/concave/zoom
+
+        menu: {
+          numbers: true,
+          custom: false,
+          themes: false,
+          transitions: false
+        },
+
+
+
+        // Optional reveal.js plugins
+        dependencies: [
+          { src: 'index_files/reveal.js-3.3.0.1/plugin/menu/menu.js', async: true },
+        ]
+      });
+    </script>
+  <!-- dynamically load mathjax for compatibility with self-contained -->
+  <script>
+    (function () {
+      var script = document.createElement("script");
+      script.type = "text/javascript";
+      script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+      document.getElementsByTagName("head")[0].appendChild(script);
+    })();
+  </script>
+
+<script>
+  (function() {
+    if (window.jQuery) {
+      Reveal.addEventListener( 'slidechanged', function(event) {  
+        window.jQuery(event.previousSlide).trigger('hidden');
+        window.jQuery(event.currentSlide).trigger('shown');
+      });
+    }
+  })();
+</script>
+
+
+  </body>
+</html>

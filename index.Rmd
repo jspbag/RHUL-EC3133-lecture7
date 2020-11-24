@@ -1,0 +1,413 @@
+---
+pagetitle: Regression with panel data
+output: 
+  revealjs::revealjs_presentation:
+    incremental: false
+    theme: solarized
+    self_contained: false
+    # reveal_plugins: ["menu","notes","chalkboard"]
+    reveal_plugins: ["menu"]
+    highlight: pygments
+    center: true
+    transition: none
+    background_transition: none 
+    reveal_options:
+      # chalkboard:
+      #   theme: whiteboard
+      #   toggleNotesButton: true
+      #   toggleChalkboardButton: true
+      menu:
+        numbers: true
+      slideNumber: true
+      previewLinks: false
+    fig_caption: true
+    pandoc_args:
+    - --indented-code-classes
+    - lineNumbers
+    css: mystyle.css
+    
+--- 
+
+<section>
+
+<h1>Regression with panel data</h1>
+
+Based on Stock and Watson, ch. 10
+
+<br>
+
+<h2>[Jesper Bagger](mailto:jesper.bagger@rhul.ac.uk)</h2>
+
+<h3>EC3133 | Royal Holloway | 2020/21</h3>
+
+</section>
+
+```{r results='asis', echo=FALSE, include=FALSE}
+library(AER) # Include library Applied Econometrics with R package
+library(parameters) # Include parameters library for robust SEs
+data(Fatalities) # Load Fatalities data from AER library
+```
+
+## Outline
+
+1. Panel data
+
+2. Panel data and omitted variable bias
+
+3. The fixed effects regression
+
+4. Regression with entity and time fixed effects
+
+5. Estimating causal effects in the fixed effects model
+
+6. Clustered standard errors 
+
+# Panel data
+
+## Panel data
+
+- A **panel data set** contains **repeated** observations on the **same** cross section entity
+
+- Individual observations on the variables in a panel data set are indexed by two subscripts:
+
+  - Subscript $i$ index the cross section entity: $i=1,\ldots,n$
+  
+  - Subscript $t$ index the time period: $t=1,\ldots,T$
+  
+- A panel is **balanced** if every entity is observed for the same number of periods
+
+## The state traffic fatality panel
+
+- Cross section entities: the 48 contiguous US states
+
+- Time periods: annual, from 1982 to 1988
+
+- Traffic fatality rate: number of traffic deaths per 10,000 people living in the state
+
+- Beer tax: tax on a case of beer in $1988
+
+# Panel data and omitted variable bias
+
+## Fatality rate-beer tax scatters
+
+```{r, echo=FALSE, eval=TRUE, error=FALSE, warning=FALSE}
+Fatalities$fatalrate <- Fatalities$fatal/Fatalities$pop*10000
+Fatalities.1982 <- subset(Fatalities, year == "1982")
+Fatalities.1988 <- subset(Fatalities, year == "1988")
+lm.1982 <- lm(fatalrate ~ beertax, data = Fatalities.1982)
+lm.1988 <- lm(fatalrate ~ beertax, data = Fatalities.1988)
+# par() sets or query graphical parameters
+par(mfrow=c(1,2)) # Set matrix with 1 row and 2 columns, then fill row-wise
+# Plot 1 (row 1, col 1): scatter plot of Score against STR
+plot(Fatalities.1982$beertax,Fatalities.1982$fatalrate,     
+     main = "1982", 
+     xlab = "Beer tax ($1988)", # Label x-axis
+     ylab = "Fatality rate", # Label y-axis
+     col = "blue", # Make the data points blue
+     xlim = c(0, 3), # Range of x-values in plot
+     ylim = c(0, 4.5)) # Range of y-values in plot
+abline(lm.1982,
+       lwd = 3,
+       col = "blue")
+# Plot 2 (row 1, col 2): Scatter plot of English against Score
+plot(Fatalities.1988$beertax,Fatalities.1988$fatalrate,
+     main = "1988", 
+     xlab = "Beer tax ($1988)", # Label x-axis
+     ylab = "Fatality rate", # Label y-axis
+     col = "blue", # Make the data points blue
+     xlim = c(0, 3), # Range of x-values in plot
+     ylim = c(0, 4.5)) # Range of y-values in plot
+abline(lm.1988,
+       lwd = 3,
+       col = "blue")
+```
+
+## Omitted variable bias
+
+- Suppose $Z_i$ is a time-invariant omitted variable
+
+  $$FR_{it} = \beta_0 + \beta_1 BT_{it} + \beta_2 Z_i + u_{it}$$
+  
+  What might $Z_i$ capture? Is it likely correlated with $BT_{it}$?
+  
+- Change in the fatality rate between 1982 and 1988 is naturally free of problematic variable $Z_i$,
+
+  \begin{multline*}
+  (FR_{i,1988} - FR_{i,1982}) = \\
+  \beta_1 (BT_{i,88} - BT_{i,82}) + (u_{i,88} - u_{i,82});
+  \end{multline*}
+  
+  yet, can estimate coefficient of interest $\beta_1$ by regressing $(FR_{i,88} - FR_{i,82})$ on $(BT_{i,88} - BT_{i,82})$
+
+## Changes in fatality rate-changes in beer tax scatter
+
+```{r, echo=FALSE, eval=TRUE, error=FALSE, warning=FALSE}
+fatalrate.D <- Fatalities.1988$fatalrate - Fatalities.1982$fatalrate
+beertax.D <- Fatalities.1988$beertax - Fatalities.1982$beertax
+lm.D <- lm(fatalrate.D ~ beertax.D)
+# Scatter plot of changes
+plot(beertax.D,fatalrate.D,     
+     xlab = "Change in beer tax ($1988)", # Label x-axis
+     ylab = "Change in fatality rate", # Label y-axis
+     col = "blue", # Make the data points blue
+     xlim = c(-0.6,0.6), # Range of x-values in plot
+     ylim = c(-1.5, 1.0)) # Range of y-values in plot
+abline(lm.D,
+       lwd = 3,
+       col = "blue")
+```
+
+# The fixed effects regression
+
+## The fixed effects regression model
+
+- Population regression model
+
+  $$FR_{it} = \underset{\beta_0 + \beta_2 Z_i}{\underbrace{\alpha_i}} + \beta_1 BT_{it} + u_{it}$$
+
+- $\alpha_i$ is an **entity fixed effect** containing **all** time-invariant determinants of $FR_{it}$
+
+- The time-invariant determinants may be correlated with timevarying regressor $BT_{it}$
+
+- The fixed effects regression model has a separate intercepts for each cross section unit ($n$ intercepts!)
+
+## Entity-demeaning
+
+- The **entity-means** of $FR_{it}$, $BT_{it}$, and $u_{it}$ are
+
+  $$\overline{FR}_{i} = \frac{1}{T} \sum_{t=1}^T FR_{it}; \quad \overline{BT}_{i} = \frac{1}{T} \sum_{t=1}^T BT_{it};$$
+  $$\overline{u}_{i} = \frac{1}{T} \sum_{t=1}^T u_{it}$$
+
+- Entity-demeaning the model gets rid of problematic $\alpha_i$
+
+  $$(FR_{it} - \overline{FR}_{i})= \beta_1 (BT_{it} - \overline{BT}_{i}) + (u_{it} - \overline{u}_{i})$$
+
+- The within-estimator $\hat{\beta}_{1,\text{Within}}$: estimate $\beta_1$ by OLS in the demeaned regression of $(FR_{it} - \overline{FR}_{i})$ on $(BT_{it} - \overline{BT}_{i})$
+
+## Demeaned fatality rate-demeaned beer tax scatter
+
+```{r, echo=FALSE, eval=TRUE, error=FALSE, warning=FALSE}
+Fatalities$fatalrate.i.demean <- Fatalities$fatalrate - ave(Fatalities$fatalrate,Fatalities$state)
+Fatalities$beertax.i.demean <- Fatalities$beertax - ave(Fatalities$beertax,Fatalities$state)
+lm.i.demean <- lm(fatalrate.i.demean ~ beertax.i.demean, data = Fatalities)
+# Scatter plot of changes
+plot(Fatalities$beertax.i.demean,Fatalities$fatalrate.i.demean,     
+     xlab = "Entity-demeaned beer tax ($1988)", # Label x-axis
+     ylab = "Entity-demeaned fatality rate", # Label y-axis
+     col = "blue", # Make the data points blue
+     xlim = c(-0.4,0.4), # Range of x-values in plot
+     ylim = c(-1.0, 1.0)) # Range of y-values in plot
+abline(lm.i.demean,
+       lwd = 3,
+       col = "blue")
+```
+
+## The within-estimator in R using `plm()`
+
+```{r, eval=FALSE, echo=TRUE, results='hide', warning = FALSE}
+library(plm) # Include plm library for estimating panel data regressions
+# Regression with state fixed effects (within-estimator)
+plm1 <- plm(fatalrate ~  beertax, data = Fatalities, index = c("state"), model = "within")
+# Summarize regression output
+summary(plm1) 
+```
+
+## The within-estimator in R using `plm()`
+
+```{r, eval=TRUE, echo=FALSE}
+library(plm) # Include plm library for estimating panel data regressions
+# Regression with state fixed effects (within-estimator)
+plm1 <- plm(fatalrate ~  beertax, data = Fatalities, index = c("state"), model = "within")
+# Summarize regression output
+summary(plm1) 
+```
+
+## The within-estimator using dummy variables
+
+- Consider the $n$ dummy variables indicating individual entities
+
+  $$D1_i = \left\{ 
+  \begin{array}{ll}
+  1 & \text{if } i = 1 \\
+  0 & \text{if } i \neq 1
+  \end{array}
+  \right.,
+  \ldots, 
+  Dn_i = \left\{ 
+  \begin{array}{ll}
+  1 & \text{if } i = n \\
+  0 & \text{if } i \neq n
+  \end{array}
+  \right.
+  $$
+  
+- Express the entity fixed effects as coefficients on $n-1$ dummy variables $D2_i,\ldots,Dn_i$
+
+  $$FR_{it} = \alpha_1 + \alpha_2 D2_i + \ldots + \alpha_n Dn_i + \beta_1 BT_{it} + u_{it}$$
+  
+  and estimate the dummy variable model directly by OLS
+
+## The within-estimator in R using dummy variables
+
+```{r, eval=FALSE, echo=TRUE}
+# Regression with state fixed effects (within-estimator)
+lm.dummy <- lm(fatalrate ~  beertax + state - 1, data = Fatalities)
+# Summarize regression output
+summary(lm.dummy) 
+```
+
+## The within-estimator in R using dummy variables
+
+```{r, eval=TRUE, echo=FALSE}
+# Regression with state fixed effects (within-estimator)
+lm.dummy <- lm(fatalrate ~  beertax + state - 1, data = Fatalities)
+# Summarize regression output
+summary(lm.dummy) 
+```
+
+# Regression with entity and time fixed effects
+
+## Regression with entity and time fixed effects
+
+- Population regression model
+
+  $$FR_{it} = \beta_0 + \beta_1 BT_{it} + \beta_2 Z_i  + \beta_3 S_t + u_{it}$$
+- The model can be represented by an **state and time fixed effects regression model**:
+
+  $$FR_{it} = \beta_1 BT_{it} + \alpha_i  + \lambda_t + u_{it}$$
+  
+  where $\alpha_i$ is an **state fixed effect**, $\lambda_t$ is a **time fixed effect**. 
+  
+- The entity and time fixed effects regression model eliminates omitted variables arising both from
+
+  - time-invariant unobserved variables
+  
+  - state-invariant unobserved variables
+
+
+## Entity- and time-demeaning
+
+- The time-means of $FR_{it}$, $BT_{it}$, and $u_{it}$ are
+
+  $$\overline{FR}_{t} = \frac{1}{n} \sum_{i=1}^n FR_{it}; \quad \overline{BT}_{t} = \frac{1}{n} \sum_{i=1}^n BT_{it};$$
+  $$\overline{u}_{t} = \frac{1}{n} \sum_{i=1}^n u_{it}$$
+
+- Entity- and time-demeaning the model gets rid of problematic entity- and time-fixed effects, $\alpha_i$ and $\lambda_t$
+
+  \begin{multline*}
+  (FR_{it} - \overline{FR}_{i} - \overline{FR}_{t}) = - (\overline{\alpha} + \overline{\lambda}) \\
+  \beta_1 (BT_{it} - \overline{BT}_{i} - \overline{BT}_{t})   + (u_{it} - \overline{u}_{i} - \overline{u}_{t})
+  \end{multline*}
+
+## Demeaned fatality rate-demeaned beer tax scatter
+
+```{r, echo=FALSE, eval=TRUE, error=FALSE, warning=FALSE}
+Fatalities$fatalrate.it.demean <- Fatalities$fatalrate - ave(Fatalities$fatalrate,Fatalities$state) - ave(Fatalities$fatalrate,Fatalities$year)
+Fatalities$beertax.it.demean <- Fatalities$beertax - ave(Fatalities$beertax,Fatalities$state) - ave(Fatalities$beertax,Fatalities$year)
+lm.it.demean <- lm(fatalrate.it.demean ~ beertax.it.demean, data = Fatalities)
+# Scatter plot of changes
+plot(Fatalities$beertax.it.demean,Fatalities$fatalrate.it.demean,
+     xlab = "Entity- and time-demeaned beer tax ($1988)", # Label x-axis
+     ylab = "Entity- and time-demeaned fatality rate", # Label y-axis
+     col = "blue", # Range of y-values in plot
+     xlim = c(-1,-0.2), # Range of x-values in plot
+     ylim = c(-2.5, -1.5)) # Range of y-values in plot
+abline(lm.it.demean,
+       lwd = 3,
+       col = "blue")
+```
+
+## The twoway within-estimator in R using `plm()`
+
+```{r, eval=FALSE, echo=TRUE, results='hide', warning = FALSE}
+# Regression with state and year fixed effects (within-estimator)
+plm2 <- plm(fatalrate ~  beertax, data = Fatalities, index = c("state", "year"), model = "within", effect = "twoways")
+# Summarize regression output
+summary(plm2) 
+```
+
+## The twoway within-estimator in R using `plm()`
+
+```{r, eval=TRUE, echo=FALSE}
+# Regression with state and year fixed effects (within-estimator)
+plm2 <- plm(fatalrate ~  beertax, data = Fatalities, index = c("state", "year"), model = "within", effect = "twoways")
+# Summarize regression output
+summary(plm2) 
+```
+
+## The twoway within-estimator in R using dummy variables
+
+```{r, eval=FALSE, echo=TRUE, results='hide', warning = FALSE}
+# Regression with state fixed effects (within-estimator)
+lm.dummy.twoway <- lm(fatalrate ~  beertax + state - 1 + year - 1, data = Fatalities)
+# Summarize regression output
+summary(lm.dummy.twoway) 
+```
+
+# Estimating causal effects in the fixed effects model
+
+## The fixed effects regression assumptions
+
+<div class="box">
+$$FR_{it} = \alpha_i + \beta_1 BT_{it} + u_{it}; \quad i=1,\ldots,n; \, t = 1,\ldots,T$$
+
+where $\beta_1$ is the **causal effect** of $BT_{it}$ on $FT_{it}$. $\hat{\beta}_{1,\text{Within}}$ is consistent for $\beta_1$ and asymptotically normal if
+
+1. $\mathrm{E}(u_{it}|BT_{i1},\ldots,BT_{iT},\alpha_i) = 0$
+
+2. $(BT_{i1},\ldots,BT_{iT},u_{i1},\ldots,u_{iT};i=1,\ldots,n)$ are i.i.d. draws from their joint distribution
+
+3. $(BT_{it},u_{it})$ have nonzero finite 4th moments 
+
+4. There is no perfect multicollinearity
+
+</div>
+
+# Clustered standard errors 
+
+## The sampling distribution of the within-estimator
+
+- When $n$ is large, $\hat{\beta}_{1,\text{Within}}$  is well approximated by a random variable with a normal distribution 
+
+  $$\hat{\beta}_{1,\text{Within}} \overset{\text{approx.}}{\sim} \mathcal{N}\left( \beta_1, \mathrm{var}(\hat{\beta}_{1,\text{Within}}) \right)$$
+
+  where $$\mathrm{var}(\hat{\beta}_{1,\text{Within}}) = \frac{1}{nT}\frac{\frac{1}{T}\mathrm{var}\left( \sum_{t=1}^T \widetilde{X}_{it} \widetilde{u}_{it}\right)}{\mathrm{E}\left(\frac{1}{T}\sum_{t=1}^T \widetilde{X}_{it}^2\right)^2}$$
+
+- Looks like the variance in a heteroskedastic regression model, but also allows for **serial correlation** in the errors $u_{it}$ within each state $i$.
+
+## Clustered standard errors (HAR)
+
+- $\mathrm{var}(\hat{\beta}_{1,\text{Within}})$ contains unknown population quantities, which are replaced by sample counterparts:
+
+  $$SE(\hat{\beta}_{1,\text{Within}}))  = \sqrt{\frac{1}{nT}\frac{\frac{1}{n-1}\sum_{i=1}^n \frac{1}{T}\left[\sum_{t=1}^T \widetilde{BT}_{it} \hat{u}_{it}\right]^2}{\left[ \frac{1}{nT} \sum_{i=1}^n \sum_{t=1}^T \widetilde{BT}_{it}^2 \right]^2}}$$
+  
+  where $\hat{u}_{it}$ is the residual from the fixed effects regression.
+  
+- This is the **clustered standard errors** of $\hat{\beta}_{1,\text{Within}}$, and $SE(\hat{\beta}_{1,\text{Within}})) \overset{p}{\rightarrow} SD(\hat{\beta}_{1,\text{Within}})$ as $n \rightarrow \infty$, even when $u_{it}$ is heteroskedastic and serially correlated.
+
+## Clustered standard errors in R
+
+```{r, eval=FALSE, echo=TRUE, results='hide', warning = FALSE}
+# Compute robust (clustered at group level) standard errors and print output to console
+parameters(plm2,robust=TRUE,vcov_type="HC1", digits = 3, ci_digits = 3, p_digits = 3)
+```
+
+## The within-estimator in R using `plm()`
+
+```{r, eval=TRUE, echo=FALSE}
+# Compute robust (clustered at group level) standard errors and print output to console
+parameters(plm2,robust=TRUE,vcov_type="HC1", digits = 3, ci_digits = 3, p_digits = 3)
+```
+
+# Summary
+
+- A panel data set contains repeated observations on the same cross section entity
+
+- The fixed effects regression model has a separate intercepts for each cross section unit ($n$ intercepts!)
+
+- The within-estimator of the slopes on the time-varying variables uses only within-entity information: as-if controlling for *all* time-invariant omitted variables
+
+- The within-estimator consistently estimates causal effects if errors are uncorrelated with past, present, and future values of the time-varying regressors
+
+- Always use clustered standard errors
+
